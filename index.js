@@ -394,7 +394,7 @@ MiAqaraPlatform.prototype.initServerMiAqaraManage = function() {
 MiAqaraPlatform.prototype.sendMQTTMessage4ParseMessage = function(msg, rinfo) {
     var that = this;
     
-    var jsonObj = JSON.parse(msg);
+    var jsonObj = that.getJsonObj(msg);
     var cmd = jsonObj['cmd'];
     var sid = jsonObj['sid'];
     
@@ -418,6 +418,26 @@ MiAqaraPlatform.prototype.sendMQTTMessage4ParseMessage = function(msg, rinfo) {
     }
 }
 
+MiAqaraPlatform.prototype.getJsonObj = function(msg) {
+    var padStart = function(text, targetLength, padString) {
+        targetLength = targetLength >> 0; //floor if number or convert non-number to 0;
+        padString = String((typeof padString !== 'undefined' ? padString : ''));
+        if (text.length > targetLength) {
+            return String(text);
+        }
+        else {
+            targetLength = targetLength - text.length;
+            if (targetLength > padString.length) {
+                padString += padString.repeat(targetLength / padString.length); //append to original to ensure we are longer than needed
+            }
+            return padString.slice(0, targetLength) + String(text);
+        }
+    }
+    var jsonObj = JSON.parse(msg)
+    jsonObj['sid'] = jsonObj['sid'] && padStart(jsonObj['sid'], 12, '0')
+    return jsonObj
+}
+
 MiAqaraPlatform.prototype.parseMessage = function(msg, rinfo) {
     var that = this;
 
@@ -426,7 +446,7 @@ MiAqaraPlatform.prototype.parseMessage = function(msg, rinfo) {
     // check message
     var jsonObj;
     try {
-        jsonObj = JSON.parse(msg);
+        jsonObj = that.getJsonObj(msg);
     } catch (ex) {
         that.log.error("Bad msg: " + msg);
         return;
